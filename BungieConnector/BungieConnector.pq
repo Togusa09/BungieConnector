@@ -7,55 +7,57 @@ section BungieConnector;
 [DataSource.Kind="BungieConnector", Publish="BungieConnector.Publish"]
 shared BungieConnector.Contents = ( apiKey as text, username) =>
 	let 
-		//apiKey= "9170da7667e442519fe683947e777f6b",
-		//username = "Togusa09",
-// 		_url = "http://www.bungie.net/Platform/Destiny2/SearchDestinyPlayer/All/" & username,
-// 		source = Web.Contents(_url, [ Headers = [ #"X-API-Key" = apiKey ]]),
-// 		json = Json.Document(source),
-//         user = json[Response]{0},
-
-//         account = GetAccountInfo(apiKey, username),
-//         characters = GetCharacters(apiKey, account),
-//         characterDetails = GetCharacterDetails(apiKey, account[membershipId], characters)
-// 	in 
-//         {
-//             account,
-// 		    characters,
-//             characterDetails
-//         };
-
         account = GetAccountInfo(apiKey, username),
         characters = GetCharacters(apiKey, account),
         characterDetails = GetCharacterDetails(apiKey, account[membershipId], characters),
         characterDetails2 = GetCharacterDetails2(apiKey, account[membershipId], characters),
-        storyStats = GetStoryStats(characterDetails2),
-        expandedStoryStats =  ExpandStats(storyStats),
+
+        StoryStats = GetStats(characterDetails2, "story"),
+        AllPvpStats = GetStats(characterDetails2, "allPvP"),
+        PatrolStats = GetStats(characterDetails2, "patrol"),
+        RaidStats = GetStats(characterDetails2, "raid"),
+        StrikeStats = GetStats(characterDetails2, "allStrikes"),
+
+        expandedStoryStats =  ExpandStats(StoryStats),
+        expandedAllPvpStats =  ExpandStats(AllPvpStats),
+        expandedPatrolStats =  ExpandStats(PatrolStats),
+        expandedRaidStats =  ExpandStats(RaidStats),
+        expandedStrikeStats =  ExpandStats(StrikeStats),
+
+        mergedStats = Table.Combine({expandedStoryStats, expandedAllPvpStats, expandedPatrolStats, expandedRaidStats, expandedStrikeStats}),
+        weaponStats = Table.SelectColumns(mergedStats,{"CharacterId", "weaponKillsAutoRifleValue", "weaponKillsFusionRifleValue", "weaponKillsHandCannonValue", "weaponKillsMachinegunValue", "weaponKillsPulseRifleValue", "weaponKillsRocketLauncherValue", "weaponKillsScoutRifleValue", "weaponKillsShotgunValue", "weaponKillsSniperValue", "weaponKillsSubmachinegunValue", "weaponKillsRelicValue", "weaponKillsSideArmValue", "weaponKillsSwordValue", "weaponKillsAbilityValue", "weaponKillsGrenadeValue", "weaponKillsGrenadeLauncherValue", "weaponKillsSuperValue", "weaponKillsMeleeValue", "Type"}),
         
         objects = #table(
             {"Name",       "Key",        "Data",                           "ItemKind", "ItemName", "IsLeaf"},{
             {"Membership",      "membership",      account, "Table",    "Table",    true},
             {"Characters",      "characters",      characters, "Table",    "Table",    true},
-            //{"AllPvp",      "allpvp",      characterDetails[allPvP][allTime],  "Function",    "Function",    true},
-            //{"Patrol",      "patrol",      characterDetails[patrol][allTime],  "Function",    "Function",    true},
-            //{"Raid",      "raid",      characterDetails[raid],  "Function",    "Function",    true},
-            {"CharTest",      "chartest",      characterDetails2,  "Function",    "Function",    true},
             
-            {"Story",      "story",      storyStats,  "Function",    "Function",    true},
-            {"ExpandedStory",      "expandedStory",      expandedStoryStats,  "Table",    "Table",    true}
-            //{"AllStrikes",      "allstrikes",      characterDetails[allStrikes],  "Function",    "Function",    true},
+            //{"CharTest",      "chartest",      characterDetails2,  "Function",    "Function",    true},
+            
+
+            //{"ExpandedStory",      "expandedStory",      expandedStoryStats,  "Table",    "Table",    true},
+            {"Story",      "story",      expandedStoryStats,  "Table",    "Table",    true},
+            {"AllPvp",      "allpvp",      expandedAllPvpStats,  "Table",    "Table",    true},
+            {"Patrol",      "patrol",      expandedPatrolStats,  "Table",    "Table",    true},
+            {"Raid",      "raid",      expandedRaidStats,  "Table",    "Table",    true},
+            {"AllStrikes",      "allstrikes",      expandedStrikeStats,  "Table",    "Table",    true},
+            {"MergedStats", "mergedStats", mergedStats, "Table", "Table", true },
+            {"WeaponStats", "weaponStats", weaponStats, "Table", "Table", true }
             
         }),
         NavTable = Table.ToNavigationTable(objects, {"Key"}, "Name", "Data", "ItemKind", "ItemName", "IsLeaf")
     in
         NavTable;
 
-GetStoryStats = (character as any) =>
+GetStats = (character as any, typeName as text) =>
 let
-    storyTable = Table.SelectColumns(character, {"CharacterId", "Character.Response.story"}),
-    #"Expanded Character.Response.story" = Table.ExpandRecordColumn(storyTable, "Character.Response.story", {"allTime"}, {"allTime"}),
-    storyData = Table.ExpandRecordColumn(#"Expanded Character.Response.story", "allTime", {"activitiesCleared", "activitiesEntered", "assists", "totalDeathDistance", "averageDeathDistance", "totalKillDistance", "kills", "averageKillDistance", "secondsPlayed", "deaths", "averageLifespan", "bestSingleGameKills", "bestSingleGameScore", "killsDeathsRatio", "killsDeathsAssists", "objectivesCompleted", "precisionKills", "resurrectionsPerformed", "resurrectionsReceived", "score", "heroicPublicEventsCompleted", "adventuresCompleted", "suicides", "weaponKillsAutoRifle", "weaponKillsFusionRifle", "weaponKillsHandCannon", "weaponKillsMachinegun", "weaponKillsPulseRifle", "weaponKillsRocketLauncher", "weaponKillsScoutRifle", "weaponKillsShotgun", "weaponKillsSniper", "weaponKillsSubmachinegun", "weaponKillsRelic", "weaponKillsSideArm", "weaponKillsSword", "weaponKillsAbility", "weaponKillsGrenade", "weaponKillsGrenadeLauncher", "weaponKillsSuper", "weaponKillsMelee", "weaponBestType", "allParticipantsCount", "allParticipantsScore", "allParticipantsTimePlayed", "longestKillSpree", "longestSingleLife", "mostPrecisionKills", "orbsDropped", "orbsGathered", "publicEventsCompleted", "remainingTimeAfterQuitSeconds", "teamScore", "totalActivityDurationSeconds", "fastestCompletionMs", "longestKillDistance", "highestCharacterLevel", "highestLightLevel"}, {"activitiesCleared", "activitiesEntered", "assists", "totalDeathDistance", "averageDeathDistance", "totalKillDistance", "kills", "averageKillDistance", "secondsPlayed", "deaths", "averageLifespan", "bestSingleGameKills", "bestSingleGameScore", "killsDeathsRatio", "killsDeathsAssists", "objectivesCompleted", "precisionKills", "resurrectionsPerformed", "resurrectionsReceived", "score", "heroicPublicEventsCompleted", "adventuresCompleted", "suicides", "weaponKillsAutoRifle", "weaponKillsFusionRifle", "weaponKillsHandCannon", "weaponKillsMachinegun", "weaponKillsPulseRifle", "weaponKillsRocketLauncher", "weaponKillsScoutRifle", "weaponKillsShotgun", "weaponKillsSniper", "weaponKillsSubmachinegun", "weaponKillsRelic", "weaponKillsSideArm", "weaponKillsSword", "weaponKillsAbility", "weaponKillsGrenade", "weaponKillsGrenadeLauncher", "weaponKillsSuper", "weaponKillsMelee", "weaponBestType", "allParticipantsCount", "allParticipantsScore", "allParticipantsTimePlayed", "longestKillSpree", "longestSingleLife", "mostPrecisionKills", "orbsDropped", "orbsGathered", "publicEventsCompleted", "remainingTimeAfterQuitSeconds", "teamScore", "totalActivityDurationSeconds", "fastestCompletionMs", "longestKillDistance", "highestCharacterLevel", "highestLightLevel"})
+    fullTypeName = "Character.Response." & typeName,
+    storyTable = Table.SelectColumns(character, {"CharacterId", fullTypeName}),
+    ExpandedStats = Table.ExpandRecordColumn(storyTable, fullTypeName, {"allTime"}, {"allTime"}),
+    storyData = Table.ExpandRecordColumn(ExpandedStats, "allTime", {"activitiesCleared", "activitiesEntered", "assists", "totalDeathDistance", "averageDeathDistance", "totalKillDistance", "kills", "averageKillDistance", "secondsPlayed", "deaths", "averageLifespan", "bestSingleGameKills", "bestSingleGameScore", "killsDeathsRatio", "killsDeathsAssists", "objectivesCompleted", "precisionKills", "resurrectionsPerformed", "resurrectionsReceived", "score", "heroicPublicEventsCompleted", "adventuresCompleted", "suicides", "weaponKillsAutoRifle", "weaponKillsFusionRifle", "weaponKillsHandCannon", "weaponKillsMachinegun", "weaponKillsPulseRifle", "weaponKillsRocketLauncher", "weaponKillsScoutRifle", "weaponKillsShotgun", "weaponKillsSniper", "weaponKillsSubmachinegun", "weaponKillsRelic", "weaponKillsSideArm", "weaponKillsSword", "weaponKillsAbility", "weaponKillsGrenade", "weaponKillsGrenadeLauncher", "weaponKillsSuper", "weaponKillsMelee", "weaponBestType", "allParticipantsCount", "allParticipantsScore", "allParticipantsTimePlayed", "longestKillSpree", "longestSingleLife", "mostPrecisionKills", "orbsDropped", "orbsGathered", "publicEventsCompleted", "remainingTimeAfterQuitSeconds", "teamScore", "totalActivityDurationSeconds", "fastestCompletionMs", "longestKillDistance", "highestCharacterLevel", "highestLightLevel"}, {"activitiesCleared", "activitiesEntered", "assists", "totalDeathDistance", "averageDeathDistance", "totalKillDistance", "kills", "averageKillDistance", "secondsPlayed", "deaths", "averageLifespan", "bestSingleGameKills", "bestSingleGameScore", "killsDeathsRatio", "killsDeathsAssists", "objectivesCompleted", "precisionKills", "resurrectionsPerformed", "resurrectionsReceived", "score", "heroicPublicEventsCompleted", "adventuresCompleted", "suicides", "weaponKillsAutoRifle", "weaponKillsFusionRifle", "weaponKillsHandCannon", "weaponKillsMachinegun", "weaponKillsPulseRifle", "weaponKillsRocketLauncher", "weaponKillsScoutRifle", "weaponKillsShotgun", "weaponKillsSniper", "weaponKillsSubmachinegun", "weaponKillsRelic", "weaponKillsSideArm", "weaponKillsSword", "weaponKillsAbility", "weaponKillsGrenade", "weaponKillsGrenadeLauncher", "weaponKillsSuper", "weaponKillsMelee", "weaponBestType", "allParticipantsCount", "allParticipantsScore", "allParticipantsTimePlayed", "longestKillSpree", "longestSingleLife", "mostPrecisionKills", "orbsDropped", "orbsGathered", "publicEventsCompleted", "remainingTimeAfterQuitSeconds", "teamScore", "totalActivityDurationSeconds", "fastestCompletionMs", "longestKillDistance", "highestCharacterLevel", "highestLightLevel"}),
+    withTypeName = Table.AddColumn(storyData, "Type", each typeName)
 in 
-    storyData;
+    withTypeName;
 
 ExpandStats = (table as table) =>
 let
@@ -125,9 +127,11 @@ ExpandColumn = (table as table, columnName as text) =>
 let 
     columnVal = Table.Column(table, columnName),
     #"Expanded activitiesCleared" = Table.ExpandRecordColumn(table, columnName, {"basic"}, {"basic"}),
-    #"Expanded basic" = Table.ExpandRecordColumn(#"Expanded activitiesCleared", "basic", {"value", "displayValue"}, { columnName & "Value", columnName & "DisplayValue"})
+    #"Expanded basic" = Table.ExpandRecordColumn(#"Expanded activitiesCleared", "basic", {"value", "displayValue"}, { columnName & "Value", columnName & "DisplayValue"}),
+    SetType = Table.TransformColumnTypes(#"Expanded basic", {{ columnName & "Value", type number}})
+    //#"Changed Type" = Table.TransformColumnTypes(#"Removed Other Columns",{{"weaponKillsFusionRifleValue", Int64.Type}, {"weaponKillsHandCannonValue", Int64.Type}, {"weaponKillsMachinegunValue", Int64.Type}, {"weaponKillsPulseRifleValue", Int64.Type}})
 in 
-    #"Expanded basic";
+    SetType;
 
 GetAccountInfo = (apiKey as text, username as text)  =>
 let
@@ -141,9 +145,6 @@ in
 
 GetCharacters = (apiKey as text, account as any)=> 
 let
-    //apiKey = "9170da7667e442519fe683947e777f6b",
-    //membershipId= "4611686018471291951",
-    //membershipType = 4,
     profileUrl = "http://www.bungie.net/Platform/Destiny2/" & Number.ToText(account[membershipType]) & "/Profile/" & account[membershipId] & "?components=100,200",
     profileSource = Web.Contents(profileUrl, [ Headers = [ #"X-API-Key" = apiKey ]]),
     profileJson = Json.Document(profileSource),
@@ -182,10 +183,8 @@ let
         json = Json.Document(source)
 	in
 	    json,
-    //transform = Table.TransformColumns(characterInfo, {"CharacterId", GetCharacterDetails })
     transform = Table.AddColumn(characterInfo,  "Character", each GetCharacterDetails([CharacterId])),
     #"Expanded Character" = Table.ExpandRecordColumn(transform, "Character", {"Response", "ErrorCode", "ThrottleSeconds", "ErrorStatus", "Message", "MessageData"}, {"Character.Response", "Character.ErrorCode", "Character.ThrottleSeconds", "Character.ErrorStatus", "Character.Message", "Character.MessageData"}),
-    //#"Expanded CharacterId" = Table.ExpandRecordColumn(transform, "CharacterId", {"Response"}, {"Character.Response"}),
     #"Expanded Character.Response" = Table.ExpandRecordColumn(#"Expanded Character", "Character.Response", {"allPvP", "patrol", "raid", "story", "allStrikes"}, {"Character.Response.allPvP", "Character.Response.patrol", "Character.Response.raid", "Character.Response.story", "Character.Response.allStrikes"})
 in
     #"Expanded Character.Response";
