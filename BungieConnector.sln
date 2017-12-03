@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.27004.2006
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{4DF76451-A46A-4C0B-BE03-459FAAFA07E6}") = "BungieConnector", "BungieConnector\BungieConnector.mproj", "{89ABE31C-163C-4A0C-A23B-C1FFE68BAEB9}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x86 = Debug|x86
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{89ABE31C-163C-4A0C-A23B-C1FFE68BAEB9}.Debug|x86.ActiveCfg = Debug|x86
+		{89ABE31C-163C-4A0C-A23B-C1FFE68BAEB9}.Debug|x86.Build.0 = Debug|x86
+		{89ABE31C-163C-4A0C-A23B-C1FFE68BAEB9}.Release|x86.ActiveCfg = Release|x86
+		{89ABE31C-163C-4A0C-A23B-C1FFE68BAEB9}.Release|x86.Build.0 = Release|x86
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {FE0D090E-4EEE-416A-9A58-938B9ECCB599}
+	EndGlobalSection
+EndGlobal
