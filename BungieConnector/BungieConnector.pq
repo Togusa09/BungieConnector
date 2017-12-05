@@ -1,15 +1,11 @@
 ﻿// This file contains your Data Connector logic
 section BungieConnector;
 
-//[DataSource.Kind="BungieConnector", Publish="BungieConnector.Publish"]
-//shared BungieConnector.Contents = Value.ReplaceType(BungieConnectorImpl, type function(username as Number.Type) as any);
-
 [DataSource.Kind="BungieConnector", Publish="BungieConnector.Publish"]
 shared BungieConnector.Contents = ( apiKey as text, username) =>
 	let 
         account = GetAccountInfo(apiKey, username),
         characters = GetCharacters(apiKey, account),
-        characterDetails = GetCharacterDetails(apiKey, account[membershipId], characters),
         characterDetails2 = GetCharacterDetails2(apiKey, account[membershipId], characters),
 
         StoryStats = GetStats(characterDetails2, "story"),
@@ -35,10 +31,6 @@ shared BungieConnector.Contents = ( apiKey as text, username) =>
             {"Membership",      "membership",      account, "Table",    "Table",    true},
             {"Characters",      "characters",      characters, "Table",    "Table",    true},
             
-            //{"CharTest",      "chartest",      characterDetails2,  "Function",    "Function",    true},
-            
-
-            //{"ExpandedStory",      "expandedStory",      expandedStoryStats,  "Table",    "Table",    true},
             {"Story",      "story",      expandedStoryStats,  "Table",    "Table",    true},
             {"AllPvp",      "allpvp",      expandedAllPvpStats,  "Table",    "Table",    true},
             {"Patrol",      "patrol",      expandedPatrolStats,  "Table",    "Table",    true},
@@ -132,7 +124,6 @@ let
     #"Expanded activitiesCleared" = Table.ExpandRecordColumn(table, columnName, {"basic"}, {"basic"}),
     #"Expanded basic" = Table.ExpandRecordColumn(#"Expanded activitiesCleared", "basic", {"value", "displayValue"}, { columnName & "Value", columnName & "DisplayValue"}),
     SetType = Table.TransformColumnTypes(#"Expanded basic", {{ columnName & "Value", type number}})
-    //#"Changed Type" = Table.TransformColumnTypes(#"Removed Other Columns",{{"weaponKillsFusionRifleValue", Int64.Type}, {"weaponKillsHandCannonValue", Int64.Type}, {"weaponKillsMachinegunValue", Int64.Type}, {"weaponKillsPulseRifleValue", Int64.Type}})
 in 
     SetType;
 
@@ -161,22 +152,6 @@ let
 in
     #"Renamed Columns";
 
- GetCharacterDetails = (apiKey as text, membershipId as text, characterInfo as table) => 
-let
-    GetCharacterDetails = (characterId as text) => 
-	let
-	    characterUrl = "http://www.bungie.net/Platform/Destiny2/" & Number.ToText(4) & "/Account/" & membershipId & "/Character/" & characterId & "/Stats/?components=100,200",		  
-        source = Web.Contents(characterUrl, [ Headers = [ #"X-API-Key" = apiKey ]]),
-        json = Json.Document(source)
-	in
-	    json,
-    transform = Table.TransformColumns(characterInfo, {"CharacterId", GetCharacterDetails }),
-    // Need to expand character Id, and remove the other colums
-    #"Value characterId" = transform{0}[CharacterId],
-    Response1 = #"Value characterId"[Response]
-in
-    Response1;
-
 GetCharacterDetails2 = (apiKey as text, membershipId as text, characterInfo as table) => 
 let
     GetCharacterDetails = (characterId as text) => 
@@ -191,7 +166,6 @@ let
     #"Expanded Character.Response" = Table.ExpandRecordColumn(#"Expanded Character", "Character.Response", {"allPvP", "patrol", "raid", "story", "allStrikes"}, {"Character.Response.allPvP", "Character.Response.patrol", "Character.Response.raid", "Character.Response.story", "Character.Response.allStrikes"})
 in
     #"Expanded Character.Response";
-    //#"Expanded Character";
 
 // Data Source Kind description
 BungieConnector = [
